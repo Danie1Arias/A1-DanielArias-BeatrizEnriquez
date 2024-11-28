@@ -1,32 +1,33 @@
 import numpy as np
+import random
 
 class NeuralNet:
-  def __init__(self, layers, epochs, learning_rate, momentum, activation_function):
+  def __init__(self, layers, epochs, learning_rate, momentum, fact):
     self.L = len(layers)
     self.n = layers.copy()
     self.n_epochs = epochs
     self.learning_rate = learning_rate
     self.momentum = momentum
-    self.fact, self.d_fact = self._get_activation_function(activation_function)
+    self.fact, self.d_fact = self._get_activation_function(fact)
     self.d_w = []
     self.d_w_prev = []
     self.d_theta = []
+    self.theta_prev = []
     self.delta = []
-    self.train_loss = []
-    self.val_loss = []
+
+    # Parameters to review
+    self.train_loss = [] 
+    self.val_loss = [] 
 
     self.xi = []
     for lay in range(self.L):
-      self.xi.append(np.zeros(layers[lay]))
+      self.xi.append(np.random.rand(layers[lay]))
 
     self.w = []
     self.theta = []
-    self.theta.append(np.zeros((1, 1)))
-    self.w.append(np.zeros((1, 1)))
-
     for lay in range(1, self.L):
-      self.w.append(np.zeros((layers[lay], layers[lay - 1])))
-      self.theta.append(np.zeros((layers[lay], layers[lay - 1])))
+      self.w.append(np.random.rand(layers[lay], layers[lay - 1]))
+      self.theta.append(np.random.rand(layers[lay], 1))
 
 
   def _get_activation_function(self, activation):
