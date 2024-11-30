@@ -26,7 +26,6 @@ class NeuralNet:
     self.validation_error = []
 
 
-
   def _get_fact(self, fact):
     if fact == "sigmoid":
         return lambda x: 1 / (1 + np.exp(-x))
@@ -58,6 +57,7 @@ class NeuralNet:
         for row in range(rows):
             self._feed_forward(X[row])
             self._backpropagate(y[row])
+            self._update_weights()
 
 
   def _feed_forward(self, X):
@@ -73,4 +73,18 @@ class NeuralNet:
 
     for l in range(self.L - 2, 0, -1):
       self.delta[l] = self.d_fact(self.xi[l]) * np.dot(self.w[l + 1].T, self.delta[l + 1])
+
+
+  def _update_weights(self):
+    for l in range(1, self.L):
+        self.d_w[l] = -self.eta * np.outer(self.delta[l], self.xi[l - 1]) + self.alpha * self.d_w_prev[l]
+        self.d_theta[l] = self.eta * self.delta[l] + self.alpha * self.d_theta_prev[l]
+        self.w[l] += self.d_w[l]
+        self.theta[l] += self.d_theta[l]
+        self.d_w_prev[l] = self.d_w[l]
+        self.d_theta_prev[l] = self.d_theta[l]
+
+
+  def loss_epochs(self):
+        return np.column_stack((self.training_error, self.validation_error))
     
