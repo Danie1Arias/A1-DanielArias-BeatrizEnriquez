@@ -14,7 +14,7 @@ class NeuralNet:
     self.d_theta = []
     self.theta_prev = []
     self.delta = []
-
+    
     # Parameters to review
     self.train_loss = [] 
     self.val_loss = [] 
@@ -29,6 +29,9 @@ class NeuralNet:
       self.w.append(np.random.rand(layers[lay], layers[lay - 1]))
       self.theta.append(np.random.rand(layers[lay], 1))
 
+    self.v_w = [np.zeros_like(w) for w in self.w]
+    self.v_theta = [np.zeros_like(t) for t in self.theta]
+
 
   def _get_activation_function(self, activation):
     if activation == "sigmoid":
@@ -42,32 +45,30 @@ class NeuralNet:
       
 
   def fit(self, X, y):
-    # TODO: Train NN using X and y sets
-
-    # Initialize variables for momentum
-    v_w = [np.zeros_like(w) for w in self.w]
-    v_b = [np.zeros_like(b) for b in self.b]
+    rows, cols = X.shape
 
     for epoch in range(self.n_epochs):
-      # Forward propagation
-      a = self._forward(X)
-      train_loss = np.mean((a[-1] - y.T) ** 2)
-      self.train_loss.append(train_loss)
+      for row in range(rows):
 
-      # Validation
-      val_a = self._forward(X)
-      val_loss = np.mean((val_a[-1] - y.T) ** 2)
-      self.val_loss.append(val_loss)
+        a = self._forward(X[row])
+        
+        train_loss = np.mean((a[-1] - y.T) ** 2)
+        self.train_loss.append(train_loss)
 
-      # Back propagation
-      dw, db = self._backward(a, y)
+        # Validation
+        val_a = self._forward(X)
+        val_loss = np.mean((val_a[-1] - y.T) ** 2)
+        self.val_loss.append(val_loss)
 
-      # Update weights by using momentum
-      for l in range(len(self.w)):
-          v_w[l] = self.momentum * v_w[l] - self.lr * dw[l]
-          v_b[l] = self.momentum * v_b[l] - self.lr * db[l]
-          self.w[l] += v_w[l]
-          self.b[l] += v_b[l]
+        # Back propagation
+        dw, db = self._backward(a, y)
+
+        # Update weights by using momentum
+        for l in range(len(self.w)):
+            v_w[l] = self.momentum * v_w[l] - self.lr * dw[l]
+            v_theta[l] = self.momentum * v_theta[l] - self.lr * db[l]
+            self.w[l] += v_w[l]
+            self.b[l] += v_b[l]
 
 
   def _forward(self, X):
