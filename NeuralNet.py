@@ -3,103 +3,74 @@ import random
 
 class NeuralNet:
   def __init__(self, layers, epochs, learning_rate, momentum, fact):
-    self.L = len(layers)
-    self.n = layers.copy()
-    self.n_epochs = epochs
-    self.learning_rate = learning_rate
-    self.momentum = momentum
-    self.fact, self.d_fact = self._get_activation_function(fact)
-    self.d_w = []
-    self.d_w_prev = []
-    self.d_theta = []
-    self.theta_prev = []
-    self.delta = []
-    
-    # Parameters to review
-    self.train_loss = [] 
-    self.val_loss = [] 
+    num_layers = len(layers)
+    num_units = layers.copy()
 
-    self.xi = []
-    for lay in range(self.L):
-      self.xi.append(np.random.rand(layers[lay]))
-
-    self.w = []
-    self.theta = []
-    for lay in range(1, self.L):
-      self.w.append(np.random.rand(layers[lay], layers[lay - 1]))
-      self.theta.append(np.random.rand(layers[lay], 1))
-
-    self.v_w = [np.zeros_like(w) for w in self.w]
-    self.v_theta = [np.zeros_like(t) for t in self.theta]
+    self.L = num_layers
+    self.n = num_units
+    self.epochs = epochs
+    self.eta = learning_rate
+    self.alpha = momentum
+    self.fact = self._get_fact(fact)
+    self.d_fact = self._get_d_fact(fact)
+    self.xi = [np.zeros(layer_units) for layer_units in num_units]
+    self.h = [np.zeros(layer_units) for layer_units in num_units]
+    self.w = [None] + [np.zeros((num_units[i], num_units[i - 1])) for i in range(1, num_layers)]
+    self.theta = [np.zeros(layer_units) for layer_units in num_units]
+    self.delta = [np.zeros(layer_units) for layer_units in num_units]
+    self.d_w = [None] + [np.zeros((num_units[i], num_units[i - 1])) for i in range(1, num_layers)]
+    self.d_theta = [np.zeros(layer_units) for layer_units in num_units]
+    self.d_w_prev = [None] + [np.zeros((num_units[i], num_units[i - 1])) for i in range(1, num_layers)]
+    self.d_theta_prev = [np.zeros(layer_units) for layer_units in num_units]
+    self.training_error = []
+    self.validation_error = []
 
 
-  def _get_activation_function(self, activation):
-    if activation == "sigmoid":
-        return lambda x: 1 / (1 + np.exp(-x)), lambda x: x * (1 - x)
-    elif activation == "relu":
-        return lambda x: np.maximum(0, x), lambda x: (x > 0).astype(float)
-    elif activation == "linear":
-        return lambda x: x, lambda x: np.ones_like(x)
+
+  def _get_fact(self, fact):
+    if fact == "sigmoid":
+        return lambda x: 1 / (1 + np.exp(-x))
+    elif fact == "relu":
+        return lambda x: np.maximum(0, x)
+    elif fact == "linear":
+        return lambda x: x
     else:
-        return lambda x: np.tanh(x), lambda x: 1 - x ** 2
+        return lambda x: np.tanh(x)
+    
+  
+  def _get_d_fact(self, fact):
+    if fact == "sigmoid":
+        return lambda x: x * (1 - x)
+    elif fact == "relu":
+        return lambda x: (x > 0).astype(float)
+    elif fact == "linear":
+        return lambda x: np.ones_like(x)
+    else:
+        return lambda x: 1 - x ** 2
       
 
   def fit(self, X, y):
     rows, cols = X.shape
 
-    for epoch in range(self.n_epochs):
-      for row in range(rows):
+    for epoch in range(self.epochs):
+        epoch_errors = []
 
-        a = self._forward(X[row])
-        
-        train_loss = np.mean((a[-1] - y.T) ** 2)
-        self.train_loss.append(train_loss)
-
-        # Validation
-        val_a = self._forward(X)
-        val_loss = np.mean((val_a[-1] - y.T) ** 2)
-        self.val_loss.append(val_loss)
-
-        # Back propagation
-        dw, db = self._backward(a, y)
-
-        # Update weights by using momentum
-        for l in range(len(self.w)):
-            v_w[l] = self.momentum * v_w[l] - self.lr * dw[l]
-            v_theta[l] = self.momentum * v_theta[l] - self.lr * db[l]
-            self.w[l] += v_w[l]
-            self.b[l] += v_b[l]
+        for row in range(rows):
+            self._feed_forward(X[row])
+            self._backpropagate(y[row])
 
 
-  def _forward(self, X):
-    a = [X.T]
+  def _feed_forward(self, X):
+    self.xi[0] = X
 
-    for l in range(self.L - 1):
-        z = self.w[l] @ a[l] + self.b[l]
-        a.append(self.fact(z))
-    return a
+    for l in range(1, self.L):
+        self.h[l] = np.dot(self.w[l], self.xi[l-1]) - self.theta[l]
+        self.xi[l] = self.fact(self.h[l])
 
 
-  def _backward(self, a, y):
-    m = y.shape[0]
-    y = y.reshape(-1, 1).T
-    dz = a[-1] - y
-    dw = [(dz @ a[-2].T) / m]
-    db = [np.sum(dz, axis=1, keepdims=True) / m]
+  def _backpropagate(self, y):
+    self.delta[self.L - 1] = self.d_fact(self.xi[self.L - 1]) * (self.xi[self.L - 1] - y)
 
     for l in range(self.L - 2, 0, -1):
-        dz = (self.w[l].T @ dz) * self.d_fact(a[l])
-        dw.insert(0, (dz @ a[l-1].T) / m)
-        db.insert(0, np.sum(dz, axis=1, keepdims=True) / m)
-
-    return dw, db
-  
-
-  def predict(self, X):
-    a = self._forward(X)
-    return a[-1].T
-  
-
-  def loss_epochs(self):
-    return np.array(self.train_loss), np.array(self.val_loss)
-  
+      self.delta[l] = self.d_fact(self.xi[l]) * np.dot(self.w[l + 1].T, self.delta[l + 1])
+    
