@@ -64,23 +64,23 @@ class NeuralNet:
           self._backpropagate(y_train[row])
           self._update_weights_and_thresholds()
 
-          train_errors = self._calculate_total_error(X_train, y_train)
-          epoch_errors.append(np.mean(train_errors))
+        train_errors = self._calculate_total_error(X_train, y_train)
+        epoch_errors.append(np.mean(train_errors))
 
-          val_errors = None
-          if X_val.shape[0] > 0:
-            val_errors = self._calculate_total_error(X_val, y_val)
-            epoch_errors.append(np.mean(val_errors))
-          else:
-            epoch_errors.append(0)
-            val_errors = []
+        val_errors = None
+        if X_val.shape[0] > 0:
+          val_errors = self._calculate_total_error(X_val, y_val)
+          epoch_errors.append(np.mean(val_errors))
+        else:
+          epoch_errors.append(0)
+          val_errors = []
 
-          self.training_error.append(np.mean(train_errors))
-          self.validation_error.append(np.mean(val_errors) if val_errors is not None else 0)
+        self.training_error.append(np.mean(train_errors))
+        self.validation_error.append(np.mean(val_errors) if val_errors is not None else 0)
 
-          max_len = min(len(self.training_error), len(self.validation_error), len(epoch_errors))
-          epoch_errors += [0] * (max_len - len(epoch_errors))
-          self.validation_error += [0] * (max_len - len(self.validation_error))
+        max_len = min(len(self.training_error), len(self.validation_error), len(epoch_errors))
+        epoch_errors += [0] * (max_len - len(epoch_errors))
+        self.validation_error += [0] * (max_len - len(self.validation_error))
 
 
   def _feed_forward(self, X):
