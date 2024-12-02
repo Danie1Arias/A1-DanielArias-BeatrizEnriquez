@@ -110,6 +110,7 @@ class NeuralNet:
         errors.append(error)
     return errors
 
+
   def predict(self, X):
     predictions = []
     for sample in X:
