@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.model_selection import KFold
 
 class NeuralNet:
   def __init__(self, layers, epochs, learning_rate, momentum, fact):
@@ -47,34 +48,39 @@ class NeuralNet:
         return lambda x: 1 - x ** 2
       
 
-  def fit(self, X_train, y_train, X_val, y_val):
-    rows, cols = X_train.shape
+  def fit(self, X, y):
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    for train_index, val_index in kf.split(X):
+      X_train, X_val = X[train_index], X[val_index]
+      y_train, y_val = y[train_index], y[val_index]
 
-    for epoch in range(self.epochs):
+      rows, cols = X_train.shape
+
+      for epoch in range(self.epochs):
         epoch_errors = []
 
         for row in range(rows):
-            self._feed_forward(X_train[row])
-            self._backpropagate(y_train[row])
-            self._update_weights_and_thresholds()
+          self._feed_forward(X_train[row])
+          self._backpropagate(y_train[row])
+          self._update_weights_and_thresholds()
 
-        train_errors = self._calculate_total_error(X_train, y_train)
-        epoch_errors.append(np.mean(train_errors))
+          train_errors = self._calculate_total_error(X_train, y_train)
+          epoch_errors.append(np.mean(train_errors))
 
-        val_errors = None
-        if X_val.shape[0] > 0:
-           val_errors = self._calculate_total_error(X_val, y_val)
-           epoch_errors.append(np.mean(val_errors))
-        else:
-           epoch_errors.append(0)
-           val_errors = []
+          val_errors = None
+          if X_val.shape[0] > 0:
+            val_errors = self._calculate_total_error(X_val, y_val)
+            epoch_errors.append(np.mean(val_errors))
+          else:
+            epoch_errors.append(0)
+            val_errors = []
 
-        self.training_error.append(np.mean(train_errors))
-        self.validation_error.append(np.mean(val_errors) if val_errors is not None else 0)
+          self.training_error.append(np.mean(train_errors))
+          self.validation_error.append(np.mean(val_errors) if val_errors is not None else 0)
 
-        max_len = min(len(self.training_error), len(self.validation_error), len(epoch_errors))
-        epoch_errors += [0] * (max_len - len(epoch_errors))
-        self.validation_error += [0] * (max_len - len(self.validation_error))
+          max_len = min(len(self.training_error), len(self.validation_error), len(epoch_errors))
+          epoch_errors += [0] * (max_len - len(epoch_errors))
+          self.validation_error += [0] * (max_len - len(self.validation_error))
 
 
   def _feed_forward(self, X):
@@ -89,7 +95,7 @@ class NeuralNet:
     self.delta[self.L - 1] = self.d_fact(self.xi[self.L - 1]) * (self.xi[self.L - 1] - y)
 
     for l in range(self.L - 2, 0, -1):
-      self.delta[l] = self.d_fact(self.xi[l]) * np.dot(self.w[l + 1].T, self.delta[l + 1])
+      self.delta[l] = self.d_fact(self.xi[l]) * np.dot(self.delta[l + 1].T, self.w[l + 1])
 
 
   def _update_weights_and_thresholds(self):
