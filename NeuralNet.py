@@ -1,6 +1,13 @@
 import numpy as np
 from sklearn.model_selection import KFold
 
+"""
+It's important to initialize the hidden layers' connection weights randomly, or else training will fail.
+For example, if you initialize weights and biases to zero, then all neurons in a given layer will be
+perfectly identical, and thus, backpropagation will affect them in exactly the same way, so they will
+remian identical.
+"""
+
 class NeuralNet:
   def __init__(self, layers, epochs, learning_rate, momentum, fact):
     num_layers = len(layers)
