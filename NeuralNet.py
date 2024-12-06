@@ -9,7 +9,7 @@ remian identical.
 """
 
 class NeuralNet:
-  def __init__(self, layers, epochs, learning_rate, momentum, fact):
+  def __init__(self, layers, epochs, learning_rate, momentum, fact, n_splits=2):
       num_layers = len(layers)
       num_units = layers.copy()
 
@@ -20,6 +20,7 @@ class NeuralNet:
       self.alpha = momentum
       self.fact = self._get_fact(fact)
       self.d_fact = self._get_d_fact(fact)
+      self.n_splits = 2 if n_splits < 2 else int(np.ceil(n_splits))
   
       # Standard Normal Distribution + He initialization (Optimal for ReLU activation functions)
       self.w = [None] + [np.random.randn(num_units[i], num_units[i - 1]) * np.sqrt(2 / num_units[i - 1]) for i in range(1, num_layers)]  # Pesos con inicialización He
@@ -58,7 +59,7 @@ class NeuralNet:
       
 
   def fit(self, X, y):
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    kf = KFold(n_splits=self.n_splits, shuffle=True, random_state=42)
     
     for train_index, test_index in kf.split(X):
       X_train, X_test = X[train_index], X[test_index]
