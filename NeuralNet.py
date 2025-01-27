@@ -60,31 +60,39 @@ class NeuralNet:
 
   def fit(self, X, y):
     kf = KFold(n_splits=self.n_splits, shuffle=True, random_state=42)
-    
-    for train_index, test_index in kf.split(X):
-      X_train, X_test = X[train_index], X[test_index]
-      y_train, y_test = y[train_index], y[test_index]
 
-      petterns = X_train.shape[0]
+    for epoch in range(self.epochs):
+      fold_train_errors = []
+      fold_val_errors = []
 
-      for epoch in range(self.epochs):
-        epoch_train_errors = []
-        epoch_val_errors = []
+      for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
 
-        for pattern in range(petterns):
+        # Number of patterns in the training set
+        patterns = X_train.shape[0]
+
+        # Train on the training set
+        for pattern in range(patterns):
           self._feed_forward(X_train[pattern])
           self._backpropagate(y_train[pattern])
           self._update_weights_and_thresholds()
 
-        # Training error for all patterns
+        # Calculate errors per fold
         train_errors = self._calculate_total_error(X_train, y_train)
-        epoch_train_errors.append(np.mean(train_errors))
-        self.training_error.append(np.mean(epoch_train_errors))
+        fold_train_errors.append(np.mean(train_errors))
 
-        # Validation error for all patterns
         val_errors = self._calculate_total_error(X_test, y_test)
-        epoch_val_errors.append(np.mean(val_errors))
-        self.validation_error.append(np.mean(epoch_val_errors))
+        fold_val_errors.append(np.mean(val_errors))
+
+      # Average errors between folds
+      epoch_train_error = np.mean(fold_train_errors)
+      epoch_val_error = np.mean(fold_val_errors)
+
+      # Store errors for plotting
+      self.training_error.append(epoch_train_error)
+      self.validation_error.append(epoch_val_error)
+
 
 
   def _feed_forward(self, X):
